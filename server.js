@@ -10,7 +10,7 @@ const VALID_CREDENTIALS = {
 const server = new ProxyChain.Server({
   port: 8000,
   hostname: '0.0.0.0', // listen on all network interfaces
-  
+
   // Called for each incoming client connection
   prepareRequestFunction: async ({ request, username, password, connectionId }) => {
     console.log(`[${new Date().toISOString()}] [CONNECT ${connectionId}] URL: ${request.url}`);
@@ -35,7 +35,7 @@ server.on('request', (ctx) => {
   console.log(`[${new Date().toISOString()}] [PROCESSED ${ctx.connectionId}] ${ctx.request.method} ${ctx.request.url}`);
 });
 
-// Event: on proxy error
+// Event: on error
 server.on('error', (err) => {
   console.error(`[${new Date().toISOString()}] [ERROR]`, err);
 });
@@ -43,6 +43,11 @@ server.on('error', (err) => {
 // Event: on client error (e.g., connection reset)
 server.on('clientError', ({ connectionId, error }) => {
   console.error(`[${new Date().toISOString()}] [CLIENT ERROR ${connectionId}]`, error.message);
+});
+
+// **New Event: on request failure upstream**
+server.on('requestFailed', ({ connectionId, error }) => {
+  console.error(`[${new Date().toISOString()}] [REQUEST FAILED ${connectionId}]`, error);
 });
 
 // Start the server
