@@ -1,42 +1,46 @@
 const ProxyChain = require('proxy-chain');
 
-// Credentials for client authentication
-type ClientCreds = { username: string; password: string };
-const VALID_CREDENTIALS: ClientCreds = { username: 'lola', password: 'loli' };
+// == Configuration: set your proxy credentials here ==
+const VALID_CREDENTIALS = {
+  username: 'lola',  // <-- set your desired username
+  password: 'loli'    // <-- set your desired password
+};
 
-// Create proxy server
+// Create the rotating proxy server
 const server = new ProxyChain.Server({
   port: 8000,
-  hostname: '0.0.0.0', // listen on all interfaces
-
-  // Called for each incoming client request
+  hostname: '0.0.0.0', // listen on all network interfaces
+  
+  // This function is called for each incoming client connection
   prepareRequestFunction: async ({ request, username, password, connectionId }) => {
-    console.log(`[${new Date().toISOString()}] Connection ${connectionId}: Incoming request for ${request.url}`);
+    console.log(`[${new Date().toISOString()}] [CONNECT ${connectionId}] URL: ${request.url}`);
 
-    // Authenticate client
+    // Authenticate the client
     if (username !== VALID_CREDENTIALS.username || password !== VALID_CREDENTIALS.password) {
-      console.warn(`[${new Date().toISOString()}] Connection ${connectionId}: Authentication failed for user '${username}'`);
+      console.warn(`[${new Date().toISOString()}] [AUTH FAIL ${connectionId}] User='${username}'`);
+      // Request authentication from client
       return { requestAuthentication: true };
     }
 
-    // On successful auth, route through Tor SOCKS5
-    const upstreamProxyUrl = 'socks5://127.0.0.1:9050';
-    console.log(`    Authenticated. Forwarding via ${upstreamProxyUrl}`);
-    return { upstreamProxyUrl };
-  },
+    console.log(`[${new Date().toISOString()}] [AUTH OK ${connectionId}] Forwarding via Tor SOCKS5`);
+    // Forward through Tor
+    return {
+      upstreamProxyUrl: 'socks5://127.0.0.1:9050'
+    };
+  }
 });
 
-// Event: when a proxy request is successfully established
+// Event: when a request is fully processed
 server.on('request', (ctx) => {
-  console.log(`[${new Date().toISOString()}] Processed request ${ctx.connectionId}: ${ctx.request.method} ${ctx.request.url}`);
+  console.log(`[${new Date().toISOString()}] [PROCESSED ${ctx.connectionId}] ${ctx.request.method} ${ctx.request.url}`);
 });
 
-// Event: when an error occurs in proxy processing
+// Event: on error
 server.on('error', (err) => {
-  console.error(`[${new Date().toISOString()}] Proxy error:`, err);
+  console.error(`[${new Date().toISOString()}] [ERROR]`, err);
 });
 
-// Start server
+// Start the server
 server.listen(() => {
   console.log(`[${new Date().toISOString()}] Rotating proxy listening on port 8000`);
 });
