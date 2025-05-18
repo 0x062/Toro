@@ -7,4 +7,4 @@ with Controller.from_port(port=9051) as controller:
     while True:
         print("Rotating IP...")
         controller.signal(Signal.NEWNYM)
-        time.sleep(60)  # Rotasi tiap 1 menit
+        time.sleep(20)  # Rotasi tiap 1 menit
